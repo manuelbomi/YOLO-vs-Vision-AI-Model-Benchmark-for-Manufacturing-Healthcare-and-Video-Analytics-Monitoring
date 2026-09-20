@@ -53,6 +53,14 @@ jobs:
         run: |
           curl -sf -X POST "http://127.0.0.1:8010/api/arena/compare" \
             -F "sample_path=manufacturing/warehouse_1.jpg" | grep image_width
+      - name: Smoke-test all 3 scenarios' live RTSP feeds
+        run: |
+          sleep 5  # give the camera-sim containers a moment to start looping
+          for scenario in manufacturing healthcare video_analytics; do
+            bytes=$(curl -sf "http://127.0.0.1:8010/api/live/stream?model=YOLO11n&source=$scenario" --max-time 8 -o /dev/null -w "%{size_download}")
+            echo "$scenario: $bytes bytes"
+            [ "$bytes" -gt 10000 ] || { echo "::error::$scenario live stream produced too little data"; exit 1; }
+          done
       - name: Smoke-test the frontend is served
         run: curl -sf http://127.0.0.1:3001/ | grep "Vision Model Benchmark"
       - name: Show logs on failure

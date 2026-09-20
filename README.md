@@ -30,9 +30,11 @@ two-stage detector and the transformer both found the forklift and the
 worker. That's not a cherry-picked failure — it's an honest, reproducible
 finding about a real tradeoff (see [Model families](#model-families-what-are-you-actually-comparing)).
 
-A live RTSP camera feed, run through a chosen model in real time:
+A live RTSP camera feed, run through a chosen model in real time — one of
+three independent scenario feeds you can switch between:
 
 ![Live Monitor: a real RTSP stream annotated live by the chosen model](docs/images/dashboard_live_monitor.png)
+![Live Monitor: the video-analytics scenario's feed, correctly detecting cars and pedestrians](docs/images/dashboard_live_monitor_video_analytics.png)
 
 Your own browser camera, streamed to the backend over WebRTC and annotated
 in real time:
@@ -199,11 +201,11 @@ docker compose up --build
 
 Open **http://localhost:3001**.
 
-This brings up four containers: the API (with all four models'
-weights already downloaded at image-build time, so it starts serving
-immediately instead of downloading on first request), the React frontend,
-and an RTSP camera simulator (MediaMTX + FFmpeg looping the bundled
-manufacturing demo clip) for the Live Monitor tab.
+This brings up six containers: the API (with all four models' weights
+already downloaded at image-build time, so it starts serving immediately
+instead of downloading on first request), the React frontend, and an RTSP
+camera simulator — MediaMTX plus one FFmpeg container per scenario, each
+looping that scenario's own bundled demo clip — for the Live Monitor tab.
 
 **Why ports 8010 and 3001, not 8000/3000?** Those are two of the most
 common default ports for exactly this kind of app, and this repo was built
@@ -330,11 +332,12 @@ plus a few more worth knowing about.
 
 ### How this repo actually uses RTSP and WebRTC
 
-- **RTSP** (`scripts/start_rtsp_demo.py`, or the `mediamtx`/`camera-sim`
-  Docker services): MediaMTX runs as a real RTSP server, and FFmpeg loops
-  the manufacturing demo clip into it as a genuine, continuous RTSP feed —
-  the exact same thing a real camera does. The **Live Monitor** dashboard
-  reads it with plain `cv2.VideoCapture`.
+- **RTSP** (`scripts/start_rtsp_demo.py`, or the `mediamtx`/`camera-sim-*`
+  Docker services): MediaMTX runs as a real RTSP server, and one FFmpeg
+  process per scenario loops that scenario's own demo clip into it as a
+  genuine, continuous RTSP feed — the exact same thing a real camera does,
+  three independent times over. The **Live Monitor** dashboard reads
+  whichever one you pick with plain `cv2.VideoCapture`.
 - **WebRTC** (`api/ingestion/webrtc.py`, following the
   [aiortc](https://github.com/aiortc/aiortc) project's own reference
   pattern): the **Webcam** dashboard tab sends your browser's camera to the
@@ -349,14 +352,20 @@ plus a few more worth knowing about.
 ## The three scenarios
 
 The **Model Arena** works identically for all three — pick a bundled
-sample image or upload your own, and every model runs on it. One scenario
-additionally has a live, continuous demo:
+sample image or upload your own, and every model runs on it. All three also
+have their own live, continuous RTSP demo feed in the **Live Monitor**
+tab — three genuinely independent streams (MediaMTX + FFmpeg, each looping
+that scenario's own sample clip; see `scripts/start_rtsp_demo.py` and the
+`camera-sim-*` Docker services), not one feed relabeled three times:
 
 | Scenario | Arena support | Live demo |
 |---|---|---|
-| **Manufacturing** | Yes — warehouse and factory-floor sample images | Yes — the Live Monitor tab's RTSP feed and the Webcam tab both work against this scenario's assumptions (a fixed or handheld camera watching a work area) |
-| **Healthcare** | Yes — staged PPE/training-facility sample images (no real patients, no clinical data — see [`data/CREDITS.md`](data/CREDITS.md)) | Not yet — see [Roadmap](#roadmap) |
-| **Video analytics** | Yes — street/traffic sample images | Not yet — see [Roadmap](#roadmap) |
+| **Manufacturing** | Yes — warehouse and factory-floor sample images | Yes — `data/samples/manufacturing/demo_clip.mp4` |
+| **Healthcare** | Yes — staged PPE/training-facility sample images (no real patients, no clinical data — see [`data/CREDITS.md`](data/CREDITS.md)) | Yes — `data/samples/healthcare/demo_clip.mp4` |
+| **Video analytics** | Yes — street/traffic sample images | Yes — `data/samples/video_analytics/demo_clip.mp4` |
+
+The Webcam (WebRTC) tab works against any scenario's assumptions equally —
+it's just whatever your camera happens to be pointed at.
 
 All sample images are real, openly-licensed photos (Wikimedia Commons),
 credited with their exact source and license in
@@ -529,9 +538,6 @@ change.
 
 ## Known limitations & honest scoping
 
-- **One fully-live scenario.** Manufacturing has a continuous RTSP demo;
-  healthcare and video analytics are supported in the Model Arena today,
-  with a dedicated live-feed walkthrough as a roadmap item.
 - **WebRTC has no TURN server configured** — fine for same-machine/LAN
   demo use; a browser behind a restrictive NAT on a different network may
   fail to connect. Adding TURN is a config change (see
@@ -567,7 +573,7 @@ change.
 | Model registry with promotion workflow | Done |
 | Webhooks on significant drift | Done |
 | Docker Compose one-command deployment | Done |
-| Live camera-feed walkthrough for healthcare & video-analytics scenarios | Planned |
+| Live camera-feed walkthrough for healthcare & video-analytics scenarios | Done |
 | TURN server config for WebRTC across restrictive NATs | Planned |
 | Durable webhook delivery with retries | Planned |
 | A 5th model family entry (e.g. a segmentation model) | Planned |

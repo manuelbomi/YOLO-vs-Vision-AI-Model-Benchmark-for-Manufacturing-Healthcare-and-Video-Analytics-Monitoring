@@ -1,4 +1,5 @@
-# One-command "plug and play" deployment: RTSP camera simulator + API + frontend.
+# One-command "plug and play" deployment: RTSP camera simulators (one per
+# scenario) + API + frontend.
 #
 #   docker compose up --build
 #
@@ -14,7 +15,7 @@ services:
       - "8554:8554" # RTSP
     restart: unless-stopped
 
-  camera-sim:
+  camera-sim-manufacturing:
     image: linuxserver/ffmpeg:latest
     depends_on:
       - mediamtx
@@ -24,7 +25,35 @@ services:
     command:
       [
         "-re", "-stream_loop", "-1", "-i", "/data/demo_clip.mp4",
-        "-c", "copy", "-f", "rtsp", "rtsp://mediamtx:8554/demo",
+        "-c", "copy", "-f", "rtsp", "rtsp://mediamtx:8554/demo-manufacturing",
+      ]
+    restart: unless-stopped
+
+  camera-sim-healthcare:
+    image: linuxserver/ffmpeg:latest
+    depends_on:
+      - mediamtx
+    volumes:
+      - ./data/samples/healthcare:/data:ro
+    entrypoint: ["ffmpeg"]
+    command:
+      [
+        "-re", "-stream_loop", "-1", "-i", "/data/demo_clip.mp4",
+        "-c", "copy", "-f", "rtsp", "rtsp://mediamtx:8554/demo-healthcare",
+      ]
+    restart: unless-stopped
+
+  camera-sim-video-analytics:
+    image: linuxserver/ffmpeg:latest
+    depends_on:
+      - mediamtx
+    volumes:
+      - ./data/samples/video_analytics:/data:ro
+    entrypoint: ["ffmpeg"]
+    command:
+      [
+        "-re", "-stream_loop", "-1", "-i", "/data/demo_clip.mp4",
+        "-c", "copy", "-f", "rtsp", "rtsp://mediamtx:8554/demo-video-analytics",
       ]
     restart: unless-stopped
 
@@ -35,11 +64,15 @@ services:
     ports:
       - "8010:8000"
     environment:
-      - DEMO_RTSP_URL=rtsp://mediamtx:8554/demo
+      - DEMO_RTSP_URL_MANUFACTURING=rtsp://mediamtx:8554/demo-manufacturing
+      - DEMO_RTSP_URL_HEALTHCARE=rtsp://mediamtx:8554/demo-healthcare
+      - DEMO_RTSP_URL_VIDEO_ANALYTICS=rtsp://mediamtx:8554/demo-video-analytics
       - CORS_ORIGINS=http://localhost:3001,http://127.0.0.1:3001
     depends_on:
       - mediamtx
-      - camera-sim
+      - camera-sim-manufacturing
+      - camera-sim-healthcare
+      - camera-sim-video-analytics
     restart: unless-stopped
 
   frontend:

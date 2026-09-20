@@ -1,10 +1,14 @@
-"""The Live Monitor: run a chosen model on a live video source (by default
-the bundled RTSP demo feed) and stream the annotated result to the browser
-as MJPEG (multipart/x-mixed-replace) -- the same mechanism most IP cameras
-use for their own browser preview, so no WebSocket/WebRTC plumbing is
-needed just to *watch* a stream. See README > Networking protocols for
-where this fits next to RTSP/WebRTC/webhooks, and api/ingestion/webrtc.py
-for the browser-source alternative.
+"""The Live Monitor: run a chosen model on a live video source and stream
+the annotated result to the browser as MJPEG (multipart/x-mixed-replace)
+-- the same mechanism most IP cameras use for their own browser preview,
+so no WebSocket/WebRTC plumbing is needed just to *watch* a stream. See
+README > Networking protocols for where this fits next to RTSP/WebRTC/
+webhooks, and api/ingestion/webrtc.py for the browser-source alternative.
+
+Three named demo sources are available, one per scenario -- each is a real
+RTSP feed (MediaMTX + FFmpeg looping that scenario's sample clip; see
+scripts/start_rtsp_demo.py and the mediamtx/camera-sim-* Docker services),
+not a shared feed relabeled three times.
 """
 import io
 import os
@@ -19,7 +23,29 @@ from api.models.loader import loader
 
 router = APIRouter(prefix="/api/live", tags=["live"])
 
-DEFAULT_RTSP_URL = os.environ.get("DEMO_RTSP_URL", "rtsp://127.0.0.1:8554/demo")
+DEMO_SOURCES = {
+    "manufacturing": {
+        "url": os.environ.get("DEMO_RTSP_URL_MANUFACTURING", "rtsp://127.0.0.1:8554/demo-manufacturing"),
+        "description": (
+            "Manufacturing demo: a looping RTSP feed built from "
+            "data/samples/manufacturing/demo_clip.mp4."
+        ),
+    },
+    "healthcare": {
+        "url": os.environ.get("DEMO_RTSP_URL_HEALTHCARE", "rtsp://127.0.0.1:8554/demo-healthcare"),
+        "description": (
+            "Healthcare demo (staged PPE/training imagery, no real patients): "
+            "a looping RTSP feed built from data/samples/healthcare/demo_clip.mp4."
+        ),
+    },
+    "video_analytics": {
+        "url": os.environ.get("DEMO_RTSP_URL_VIDEO_ANALYTICS", "rtsp://127.0.0.1:8554/demo-video-analytics"),
+        "description": (
+            "Video analytics demo: a looping RTSP feed built from "
+            "data/samples/video_analytics/demo_clip.mp4."
+        ),
+    },
+}
 MAX_INFERENCE_FPS = 6.0  # deliberately capped -- see FrameSource.frames() docstring
 
 
@@ -68,27 +94,26 @@ def _mjpeg_generator(model_name: str, source: str):
         frame_source.close()
 
 
+def _resolve_source(source: str) -> str:
+    if source in DEMO_SOURCES:
+        return DEMO_SOURCES[source]["url"]
+    return source  # treat anything else as a literal RTSP URL
+
+
 @router.get("/stream")
 def live_stream(
     model: str = Query(..., description="Exact model name, e.g. 'YOLO11n'"),
-    source: str = Query(default="demo", description="'demo' for the bundled RTSP feed, or any RTSP URL"),
+    source: str = Query(
+        default="manufacturing",
+        description="One of 'manufacturing' | 'healthcare' | 'video_analytics', or any RTSP URL",
+    ),
 ):
-    resolved_source = DEFAULT_RTSP_URL if source == "demo" else source
     return StreamingResponse(
-        _mjpeg_generator(model, resolved_source),
+        _mjpeg_generator(model, _resolve_source(source)),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
 
 
 @router.get("/sources")
 def list_sources():
-    return {
-        "demo": {
-            "url": DEFAULT_RTSP_URL,
-            "description": (
-                "Bundled manufacturing demo: a looping RTSP feed built from "
-                "data/samples/manufacturing/demo_clip.mp4 by MediaMTX + "
-                "FFmpeg. See scripts/start_rtsp_demo.py."
-            ),
-        }
-    }
+    return DEMO_SOURCES
