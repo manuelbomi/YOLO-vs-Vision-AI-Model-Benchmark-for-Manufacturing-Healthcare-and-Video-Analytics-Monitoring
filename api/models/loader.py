@@ -10,12 +10,14 @@ from .caption_model import CaptionModel
 from .detr_model import DetrModel
 from .fasterrcnn_model import FasterRCNNModel
 from .yolo_model import YoloModel
+from .yolo_seg_model import YoloSegModel
 
 MODEL_CLASSES: list[type[VisionModel]] = [
     YoloModel,
     FasterRCNNModel,
     DetrModel,
     CaptionModel,
+    YoloSegModel,
 ]
 
 

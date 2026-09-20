@@ -29,3 +29,7 @@
 .family-vlm .family-dot {
   background: var(--family-vlm);
 }
+
+.family-segmentation .family-dot {
+  background: var(--family-segmentation);
+}

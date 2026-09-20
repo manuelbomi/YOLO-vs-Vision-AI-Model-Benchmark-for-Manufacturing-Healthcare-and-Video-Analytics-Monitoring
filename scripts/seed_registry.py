@@ -45,12 +45,21 @@ def main():
         avg_latency = measure_latency_ms(model, image)
         print(f"  measured latency: {avg_latency:.1f} ms (avg of 3 runs)")
 
+        framework = {
+            "yolo": "ultralytics",
+            "segmentation": "ultralytics",
+            "cnn": "torchvision",
+        }.get(model.family, "transformers")
+        task_type = {
+            "vlm": "image-captioning",
+            "segmentation": "instance-segmentation",
+        }.get(model.family, "object-detection")
         payload = {
             "name": model.name,
             "version": "1.0.0",
             "family": model.family,
-            "framework": "ultralytics" if model.family == "yolo" else "torchvision" if model.family == "cnn" else "transformers",
-            "task_type": "object-detection" if model.family != "vlm" else "image-captioning",
+            "framework": framework,
+            "task_type": task_type,
             "approx_download_mb": model.approx_download_mb,
             "metrics": {"latency_ms": round(avg_latency, 1)},
         }

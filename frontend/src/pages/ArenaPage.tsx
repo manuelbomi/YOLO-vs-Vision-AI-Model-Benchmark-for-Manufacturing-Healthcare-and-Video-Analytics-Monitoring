@@ -15,7 +15,11 @@ const SAMPLE_IMAGES = [
   { path: "video_analytics/street_2.jpg", label: "Night street (video analytics)" },
 ];
 
-export function ArenaPage() {
+interface ArenaPageProps {
+  modelCount: number;
+}
+
+export function ArenaPage({ modelCount }: ArenaPageProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -69,7 +73,7 @@ export function ArenaPage() {
         <p className="or-divider">or upload your own</p>
         <ImageUploader onFileSelected={setFile} disabled={loading} label="Upload a fault/scene image" />
         <button className="run-button" onClick={runComparison} disabled={!file || loading}>
-          {loading ? "Running all 4 models..." : "Run comparison"}
+          {loading ? `Running all ${modelCount || ""} models...` : "Run comparison"}
         </button>
         {error && <p className="error">{error}</p>}
       </section>

@@ -2,12 +2,13 @@
 // api/drift/stats.py field-for-field so the wire format and these types
 // never drift out of sync silently.
 
-export type ModelFamily = "yolo" | "cnn" | "transformer" | "vlm";
+export type ModelFamily = "yolo" | "cnn" | "transformer" | "vlm" | "segmentation";
 
 export interface Detection {
   label: string;
   confidence: number;
   box: [number, number, number, number];
+  mask: [number, number][] | null;
 }
 
 export interface PredictionResult {

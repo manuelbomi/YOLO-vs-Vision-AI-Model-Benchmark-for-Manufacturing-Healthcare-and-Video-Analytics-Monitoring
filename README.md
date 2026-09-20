@@ -19,10 +19,10 @@ before opening this repo.
 
 ## Results at a glance
 
-Every screenshot below is the real, running app — not a mockup. Four
+Every screenshot below is the real, running app — not a mockup. Five
 models, one uploaded warehouse photo, run side by side:
 
-![Model Arena: four models compared side by side on the same image, with bounding boxes and a latency table](docs/images/dashboard_arena.png)
+![Model Arena: five models compared side by side on the same image, with bounding boxes, a segmentation mask, and a latency table](docs/images/dashboard_arena.png)
 
 Notice something real in that screenshot: **YOLO found zero objects** in
 this particular frame at its default confidence threshold, while the
@@ -41,9 +41,11 @@ in real time:
 
 ![Webcam demo: browser camera streamed over WebRTC, annotated, and streamed back](docs/images/dashboard_webcam.png)
 
-Data-drift detection on two image batches:
+Data-drift detection on two image batches, plus the durable webhook
+delivery history it fires into (note the `drift.significant` row — that's
+a real automatic alert from the drift check above it, not staged separately):
 
-![Drift Monitor: Population Stability Index, KS-test, and Cohen's d results](docs/images/dashboard_drift.png)
+![Drift Monitor: Population Stability Index, KS-test, Cohen's d results, and webhook delivery history](docs/images/dashboard_drift.png)
 
 A minimal model registry with a promotion workflow:
 
@@ -90,7 +92,7 @@ it's not the whole decision. In a real deployment you also need to know:
 - Who signed off on this model being in production, and how do you roll it
   back?
 
-This repo answers all of those with working code, using four models chosen
+This repo answers all of those with working code, using five models chosen
 specifically to represent different *design philosophies*, not just
 different accuracy/speed points on the same curve.
 
@@ -110,7 +112,8 @@ flowchart TD
     C --> D2[Faster R-CNN]
     C --> D3[DETR]
     C --> D4[BLIP caption]
-    D1 & D2 & D3 & D4 --> E[Comparable results:<br/>boxes, latency, caption]
+    C --> D5[YOLO11n-seg]
+    D1 & D2 & D3 & D4 & D5 --> E[Comparable results:<br/>boxes, masks, latency, caption]
     E --> F[React/TypeScript frontend]
 
     B --> G[Drift module<br/>PSI / KS-test / Cohen's d]
@@ -122,32 +125,35 @@ flowchart TD
 **Backend**: FastAPI (`api/`), Python 3.10. Every model implements one
 shared interface (`api/models/base.py`) so the Arena, the Live Monitor, and
 the WebRTC path all call the exact same `model.predict(image)` regardless
-of which of the four models — or a fifth one you add — is selected.
+of which of the five models — or another one you add — is selected.
 
 **Frontend**: React 19 + TypeScript + Vite (`frontend/`), five dashboards
 described below, no router or state-management library (five tabs and a
 handful of `fetch()` calls don't need either).
 
-**Deployment**: Docker Compose brings up all four services (see
+**Deployment**: Docker Compose brings up every service (see
 [Quickstart](#quickstart)) — the API, the frontend, an RTSP camera
-simulator, and its own tiny video server.
+simulator, its own tiny video server, and a TURN server for WebRTC.
 
 ---
 
 ## Model families: what are you actually comparing?
 
-Four models, one from each of the requested families, chosen specifically
-so the comparison teaches something about *why* each design exists, not
-just which one scores higher:
+Five models, spanning the requested families plus one extra dimension
+(instance segmentation) added because "where is a rough box around this
+object" and "what is this object's exact outline" are genuinely different
+questions in a lot of real inspection work — chosen specifically so the
+comparison teaches something about *why* each design exists, not just
+which one scores higher:
 
-| | YOLO11n | Faster R-CNN (MobileNetV3) | DETR (ResNet-50) | BLIP (image captioning) |
-|---|---|---|---|---|
-| **Family** | YOLO (single-stage) | Classic CNN (two-stage) | Transformer | Small vision-language model |
-| **How it works** | One forward pass predicts every box directly | First proposes candidate regions, then classifies each one | Frames detection as a set-prediction problem solved end to end by a transformer encoder-decoder | Describes the whole image in a sentence — no boxes at all |
-| **Output** | Boxes + labels + confidence | Boxes + labels + confidence | Boxes + labels + confidence | A caption |
-| **Measured latency on this repo's dev machine (CPU)** | ~40-70 ms | ~75-100 ms | ~700-900 ms | ~500-700 ms |
-| **Download size** | ~6 MB | ~74 MB | ~160 MB | ~990 MB |
-| **Why it's here** | The real-time baseline everyone compares against | Shows the two-stage vs. one-stage design tradeoff directly | Shows what "no hand-designed post-processing" costs in latency | Shows what a fundamentally different *output type* looks like, and what it costs |
+| | YOLO11n | Faster R-CNN (MobileNetV3) | DETR (ResNet-50) | BLIP (image captioning) | YOLO11n-seg |
+|---|---|---|---|---|---|
+| **Family** | YOLO (single-stage) | Classic CNN (two-stage) | Transformer | Small vision-language model | YOLO (instance segmentation) |
+| **How it works** | One forward pass predicts every box directly | First proposes candidate regions, then classifies each one | Frames detection as a set-prediction problem solved end to end by a transformer encoder-decoder | Describes the whole image in a sentence — no boxes at all | Same single-stage architecture as YOLO11n, with an added head that predicts a pixel mask per object |
+| **Output** | Boxes + labels + confidence | Boxes + labels + confidence | Boxes + labels + confidence | A caption | Boxes **and** a per-object polygon mask |
+| **Measured latency on this repo's dev machine (CPU)** | ~40-130 ms | ~75-100 ms | ~700-900 ms | ~500-800 ms | ~90-130 ms |
+| **Download size** | ~6 MB | ~74 MB | ~160 MB | ~990 MB | ~7 MB |
+| **Why it's here** | The real-time baseline everyone compares against | Shows the two-stage vs. one-stage design tradeoff directly | Shows what "no hand-designed post-processing" costs in latency | Shows what a fundamentally different *output type* looks like, and what it costs | Shows that "detection" and "segmentation" are different tasks with almost the same latency cost here — worth knowing before assuming a box is good enough |
 
 Run `python scripts/seed_registry.py` against a running API to get these
 numbers measured on *your* hardware instead of trusting the table above.
@@ -187,6 +193,19 @@ whole repo stays a "clone and run" experience without a multi-gigabyte
 download. See [Extensibility](#extensibility) if you want to wire in a
 different VLM.)*
 
+### Boxes vs. masks (the segmentation entry)
+
+YOLO11n-seg's Arena card draws a filled, semi-transparent polygon —
+zoom into it and you'll see it hugs the actual outline of a person or
+object, not a rectangle that also covers whatever background is behind
+them. That distinction matters in practice: a box around a corroded pipe
+section also includes clean pipe on either side of it, so measuring
+"percent of the image that's corroded" from a box overstates the damage;
+a mask gives you the actual affected area. The tradeoff, visible in the
+table above, is that this repo's segmentation and detection models cost
+almost the same latency here — so "we only need boxes" is worth actually
+checking, not assuming.
+
 ---
 
 ## Quickstart
@@ -201,11 +220,12 @@ docker compose up --build
 
 Open **http://localhost:3001**.
 
-This brings up six containers: the API (with all four models' weights
+This brings up seven containers: the API (with all five models' weights
 already downloaded at image-build time, so it starts serving immediately
-instead of downloading on first request), the React frontend, and an RTSP
+instead of downloading on first request), the React frontend, an RTSP
 camera simulator — MediaMTX plus one FFmpeg container per scenario, each
-looping that scenario's own bundled demo clip — for the Live Monitor tab.
+looping that scenario's own bundled demo clip — for the Live Monitor tab,
+and a TURN server (`coturn`) for the Webcam tab's WebRTC path.
 
 **Why ports 8010 and 3001, not 8000/3000?** Those are two of the most
 common default ports for exactly this kind of app, and this repo was built
@@ -272,14 +292,14 @@ downstream.
 
 | Type | How it works | Good for | Not so good for |
 |---|---|---|---|
-| **Standard RGB (visible light)** | Ordinary color sensor, like a webcam or a phone camera | General object/person/vehicle detection in normal lighting — everything this repo's 4 models were trained for | Low light, smoke/steam, seeing through packaging |
+| **Standard RGB (visible light)** | Ordinary color sensor, like a webcam or a phone camera | General object/person/vehicle detection in normal lighting — everything this repo's 5 models were trained for | Low light, smoke/steam, seeing through packaging |
 | **Monochrome / global-shutter** | No color filter array; the whole sensor exposes at the same instant | Fast-moving objects (a rolling shutter smears motion into a skewed shape); precise size/shape measurement | Anything that needs true color (label/liquid inspection) |
 | **IR / thermal** | Senses heat, not light | Detecting people/animals in the dark, spotting overheating equipment, working through smoke | Fine detail, reading text/labels, color-based sorting |
 | **PTZ (pan-tilt-zoom)** | Motorized, remotely aimable | Wide-area monitoring with a human (or software) actively steering it | Feeding a fixed, always-on detection pipeline — a moving field of view breaks per-position tuning |
-| **3D depth (stereo, ToF, structured light)** | Two lenses (stereo), a time-of-flight sensor, or a projected light pattern — each recovers *distance*, not just color | Volume/fill-level measurement, precise bin-picking, people-counting that needs to ignore shadows/reflections, distinguishing "close small object" from "far large object" | Cost and complexity — none of this repo's 4 models take depth as input; you'd need a depth-aware model or a separate depth-processing step |
+| **3D depth (stereo, ToF, structured light)** | Two lenses (stereo), a time-of-flight sensor, or a projected light pattern — each recovers *distance*, not just color | Volume/fill-level measurement, precise bin-picking, people-counting that needs to ignore shadows/reflections, distinguishing "close small object" from "far large object" | Cost and complexity — none of this repo's 5 models take depth as input; you'd need a depth-aware model or a separate depth-processing step |
 
 **For this repo specifically**: the bundled sample images and demo video
-are ordinary RGB, backlit-appropriate photos — that's what all four
+are ordinary RGB, backlit-appropriate photos — that's what all five
 included models expect. If you're building a real deployment around 3D
 depth data, the [Extensibility](#extensibility) section below is where
 you'd plug in a depth-aware model; the ingestion and dashboard
@@ -385,7 +405,7 @@ it's just whatever your camera happens to be pointed at.
 All sample images are real, openly-licensed photos (Wikimedia Commons),
 credited with their exact source and license in
 [`data/CREDITS.md`](data/CREDITS.md) — not synthetic renders. That matters
-here specifically because all four models are pretrained on everyday
+here specifically because all five models are pretrained on everyday
 photographic objects (COCO classes like "person," "truck," "bottle"), so a
 synthetic abstract test image wouldn't give any of them something real to
 detect.
@@ -475,7 +495,7 @@ approved); `POST /api/registry/models/{id}/archive` retires it. The Model
 Registry dashboard shows this with a status badge and one-click
 promote/archive buttons.
 
-`scripts/seed_registry.py` measures each of the four models' actual
+`scripts/seed_registry.py` measures each of the five models' actual
 latency *on the machine it's run on* and registers them with real numbers
 — not hardcoded placeholders — so what you see in the Registry tab is
 always true for your own hardware.
@@ -488,7 +508,7 @@ always true for your own hardware.
 `main`? `.github/workflows/ci.yml` runs three jobs on every push:
 
 1. **`api`** — installs the Python dependencies and runs the full test
-   suite (`pytest`), which includes a smoke test that loads all four
+   suite (`pytest`), which includes a smoke test that loads all five
    models and runs inference on a real image (catches install/API-breakage
    regressions — this caught a real `transformers` version-compatibility
    bug during development; see the commit history), plus statistical
@@ -516,7 +536,7 @@ Implement the `VisionModel` protocol (`api/models/base.py`):
 ```python
 class MyModel:
     name = "My Model"
-    family = "cnn"  # or "yolo" | "transformer" | "vlm"
+    family = "cnn"  # or "yolo" | "transformer" | "vlm" | "segmentation"
     description = "..."
     approx_download_mb = 42
 
@@ -526,7 +546,11 @@ class MyModel:
         return PredictionResult(
             model_name=self.name, family=self.family,
             latency_ms=..., image_width=image.width, image_height=image.height,
-            detections=[...],  # or caption="..." for a non-detection model
+            # `caption="..."` instead of `detections` for a non-detection model,
+            # or set `mask=[(x, y), ...]` on a Detection for a per-object polygon
+            # (see api/models/yolo_seg_model.py) -- both are optional, additive
+            # fields, so a plain box-only model needs neither.
+            detections=[...],
         )
 ```
 
@@ -570,9 +594,9 @@ change.
   they won't catch every kind of distribution shift a learned feature
   embedding would. That's the explicit tradeoff for "you can read the code
   and know exactly what's being measured."
-- **4 models, not an exhaustive list.** Chosen to represent 4 distinct
+- **5 models, not an exhaustive list.** Chosen to represent 5 distinct
   design philosophies clearly, with the plug-in interface designed
-  specifically so adding a 5th, 6th, or 10th is a small, contained change
+  specifically so adding a 6th, 7th, or 10th is a small, contained change
   (see [Extensibility](#extensibility)).
 
 ---
@@ -592,7 +616,7 @@ change.
 | Live camera-feed walkthrough for healthcare & video-analytics scenarios | Done |
 | TURN server config for WebRTC across restrictive NATs | Done |
 | Durable webhook delivery with retries | Done |
-| A 5th model family entry (e.g. a segmentation model) | Planned |
+| A 5th model family entry (instance segmentation, YOLO11n-seg) | Done |
 | MQTT publish option alongside webhooks | Considering |
 | ONVIF camera discovery | Considering |
 
@@ -604,7 +628,7 @@ change.
 .
 ├── api/
 │   ├── main.py                   # FastAPI app, CORS, static mounts, startup
-│   ├── models/                   # the 4 models + the shared VisionModel interface
+│   ├── models/                   # the 5 models + the shared VisionModel interface
 │   ├── drift/                    # PSI/KS/Cohen's d statistics + routes
 │   ├── registry/                 # SQLModel schema + CRUD/promote/archive routes
 │   ├── ingestion/                # RTSP (OpenCV) and WebRTC (aiortc) video sources
@@ -620,7 +644,7 @@ change.
 │   └── CREDITS.md                 # source + license per asset
 ├── scripts/
 │   ├── start_rtsp_demo.py         # native-dev MediaMTX+FFmpeg launcher
-│   ├── seed_registry.py           # registers the 4 models with measured metrics
+│   ├── seed_registry.py           # registers the 5 models with measured metrics
 │   └── fetch_commons_image.py     # how the sample images were sourced
 ├── tests/                          # pytest: drift stats, registry workflow, model smoke tests
 ├── docker-compose.yml              # api + frontend + mediamtx + camera-sim + coturn

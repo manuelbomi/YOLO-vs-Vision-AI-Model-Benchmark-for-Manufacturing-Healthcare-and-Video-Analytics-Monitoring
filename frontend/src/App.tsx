@@ -42,10 +42,11 @@ export default function App() {
       <header className="page-header">
         <h1>Vision Model Benchmark</h1>
         <p className="subtitle">
-          Compare YOLO, a two-stage CNN detector, a transformer detector, and a
-          small vision-language model across manufacturing, healthcare, and
-          video-analytics scenarios — with real RTSP/WebRTC ingestion, data
-          drift detection, and a model registry.
+          Compare YOLO, a two-stage CNN detector, a transformer detector, a
+          small vision-language model, and an instance-segmentation model
+          across manufacturing, healthcare, and video-analytics scenarios —
+          with real RTSP/WebRTC ingestion, data drift detection, and a model
+          registry.
         </p>
       </header>
 
@@ -66,7 +67,7 @@ export default function App() {
       </nav>
 
       <main>
-        {tab === "arena" && <ArenaPage />}
+        {tab === "arena" && <ArenaPage modelCount={models.length} />}
         {tab === "live" && <LiveMonitorPage models={models} />}
         {tab === "webcam" && <WebcamPage models={models} />}
         {tab === "drift" && <DriftPage />}

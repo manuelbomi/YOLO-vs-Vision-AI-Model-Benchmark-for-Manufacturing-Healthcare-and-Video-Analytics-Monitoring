@@ -6,6 +6,7 @@ const FAMILY_LABEL: Record<ModelFamily, string> = {
   cnn: "CNN (two-stage)",
   transformer: "Transformer",
   vlm: "Small VLM",
+  segmentation: "Segmentation",
 };
 
 export function FamilyBadge({ family }: { family: ModelFamily }) {

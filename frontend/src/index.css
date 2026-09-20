@@ -14,11 +14,12 @@
   --status-warning: #fab219;
   --status-critical: #d03b3b;
 
-  /* Categorical slots for the 4 model families -- fixed order, never cycled */
+  /* Categorical slots for the 5 model families -- fixed order, never cycled */
   --family-yolo: #2a78d6;
   --family-cnn: #eb6834;
   --family-transformer: #4a3aa7;
   --family-vlm: #1baf7a;
+  --family-segmentation: #eda100;
 
   font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--text-primary);
@@ -46,6 +47,7 @@
     --family-cnn: #d95926;
     --family-transformer: #9085e9;
     --family-vlm: #199e70;
+    --family-segmentation: #c98500;
   }
 }
 

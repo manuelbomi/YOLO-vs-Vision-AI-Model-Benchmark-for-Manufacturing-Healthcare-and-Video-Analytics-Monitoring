@@ -10,15 +10,19 @@ from typing import Literal, Protocol
 
 from pydantic import BaseModel
 
-ModelFamily = Literal["yolo", "cnn", "transformer", "vlm"]
+ModelFamily = Literal["yolo", "cnn", "transformer", "vlm", "segmentation"]
 
 
 class Detection(BaseModel):
-    """One detected object. `box` is (x1, y1, x2, y2) in pixel coordinates."""
+    """One detected object. `box` is (x1, y1, x2, y2) in pixel coordinates.
+    `mask`, when set, is the instance's outline as a polygon -- a list of
+    (x, y) pixel-coordinate points -- for models that predict a pixel mask
+    rather than (or in addition to) a box."""
 
     label: str
     confidence: float
     box: tuple[float, float, float, float]
+    mask: list[tuple[float, float]] | None = None
 
 
 class PredictionResult(BaseModel):
