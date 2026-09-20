@@ -71,3 +71,35 @@
   color: var(--status-warning);
   font-size: 11px;
 }
+
+.webhook-config-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.webhook-config-row input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--grid);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.retry-button {
+  background: none;
+  border: 1px solid var(--grid);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.retry-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -4,6 +4,7 @@ Run from the repo root (so `api`, `data`, and the registry DB path all
 resolve):
     uvicorn api.main:app --reload --port 8000
 """
+import asyncio
 import os
 
 from fastapi import FastAPI
@@ -19,6 +20,7 @@ from api.routes_arena import router as arena_router
 from api.routes_live import router as live_router
 from api.routes_webhooks import router as webhooks_router
 from api.routes_webrtc import router as webrtc_router
+from api.webhooks_worker import run_forever as run_webhook_retry_worker
 
 app = FastAPI(title="Vision Model Benchmark API")
 
@@ -42,10 +44,21 @@ app.include_router(webhooks_router)
 app.include_router(webrtc_router)
 
 
+_webhook_worker_task: asyncio.Task | None = None
+
+
 @app.on_event("startup")
-def _startup():
+async def _startup():
+    global _webhook_worker_task
     init_db()
     loader.load_all()
+    _webhook_worker_task = asyncio.create_task(run_webhook_retry_worker())
+
+
+@app.on_event("shutdown")
+async def _shutdown():
+    if _webhook_worker_task:
+        _webhook_worker_task.cancel()
 
 
 @app.get("/api/health")

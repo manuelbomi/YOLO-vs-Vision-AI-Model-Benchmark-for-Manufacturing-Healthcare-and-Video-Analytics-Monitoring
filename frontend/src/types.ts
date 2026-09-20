@@ -66,3 +66,20 @@ export interface LiveSource {
   url: string;
   description: string;
 }
+
+export type DeliveryStatus = "delivered" | "retrying" | "failed";
+
+export interface WebhookDelivery {
+  id: number;
+  event_type: string;
+  url: string;
+  payload: Record<string, unknown>;
+  status: DeliveryStatus;
+  attempt_count: number;
+  last_status_code: number | null;
+  last_error: string | null;
+  created_at: string;
+  last_attempt_at: string | null;
+  next_attempt_at: string | null;
+  delivered_at: string | null;
+}

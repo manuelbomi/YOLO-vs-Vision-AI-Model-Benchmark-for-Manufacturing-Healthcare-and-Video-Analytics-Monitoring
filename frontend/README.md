@@ -6,9 +6,9 @@ five dashboards over one FastAPI backend.
 | Tab | What it does |
 |---|---|
 | **Model Arena** | Run all 4 models (YOLO, Faster R-CNN, DETR, BLIP) on the same image, side by side, with bounding boxes drawn directly on the image and a latency comparison table |
-| **Live Monitor** | Watch a chosen model run live on the bundled manufacturing RTSP demo feed, streamed back as annotated MJPEG |
+| **Live Monitor** | Watch a chosen model run live on a bundled RTSP demo feed (manufacturing, healthcare, or video-analytics), streamed back as annotated MJPEG |
 | **Webcam (WebRTC)** | Your browser's camera, streamed to the backend over WebRTC, annotated, and streamed back — no RTSP involved |
-| **Drift Monitor** | Upload a reference batch and a current batch of images; see Population Stability Index / KS-test / Cohen's d results |
+| **Drift Monitor** | Upload a reference batch and a current batch of images; see Population Stability Index / KS-test / Cohen's d results, plus webhook config and durable delivery history |
 | **Model Registry** | The SQLite-backed model-governance table: promote/archive model versions |
 
 ## Running

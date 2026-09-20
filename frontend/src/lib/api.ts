@@ -4,6 +4,7 @@ import type {
   FeatureDriftResult,
   LiveSource,
   ModelVersion,
+  WebhookDelivery,
 } from "../types";
 
 export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
@@ -119,6 +120,16 @@ export async function setWebhookUrl(url: string | null): Promise<{ url: string |
 
 export async function sendTestWebhook(): Promise<unknown> {
   const response = await fetch(`${API_BASE}/api/webhooks/test`, { method: "POST" });
+  return handle(response);
+}
+
+export async function fetchWebhookDeliveries(): Promise<WebhookDelivery[]> {
+  const response = await fetch(`${API_BASE}/api/webhooks/deliveries`);
+  return handle(response);
+}
+
+export async function retryWebhookDelivery(id: number): Promise<WebhookDelivery> {
+  const response = await fetch(`${API_BASE}/api/webhooks/deliveries/${id}/retry`, { method: "POST" });
   return handle(response);
 }
 

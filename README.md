@@ -325,12 +325,12 @@ plus a few more worth knowing about.
 |---|---|---|---|---|
 | **RTSP** (Real-Time Streaming Protocol) | The standard way almost every fixed IP camera streams video | **Yes** — `api/ingestion/video_source.py`, verified against a real local MediaMTX server | Universal camera support, simple (`cv2.VideoCapture("rtsp://...")` and you're reading frames), works well for a single fixed viewer | Not designed for browsers directly (no native browser RTSP support) or for many simultaneous low-latency viewers |
 | **WebRTC** | Real-time browser-to-server (or peer-to-peer) audio/video, the technology behind video calls | **Yes** — `api/ingestion/webrtc.py`, verified with a real Chromium browser test (offer/answer exchange, live annotated video received back) | Works natively in every browser with no plugin, sub-second latency, built-in NAT traversal via STUN/TURN | More moving parts (signaling, ICE negotiation), and — the practical reason RTSP remains more common for *fixed industrial cameras* specifically — a camera vendor has to build WebRTC support in, whereas RTSP has been a baseline expectation for over a decade |
-| **Webhooks** (outgoing HTTP POST) | Push a notification/event to another system when something happens | **Yes** — `api/webhooks.py`, fires automatically on a significant drift finding | Dead simple (any system that can receive an HTTP POST can integrate), no persistent connection needed | Best-effort, no guaranteed delivery/retry in this reference implementation (see [Known limitations](#known-limitations--honest-scoping)) |
+| **Webhooks** (outgoing HTTP POST) | Push a notification/event to another system when something happens | **Yes** — `api/webhooks.py`, fires automatically on a significant drift finding | Dead simple (any system that can receive an HTTP POST can integrate), no persistent connection needed | Still just plain HTTP with no built-in auth/signing beyond what you add at the receiving end |
 | **MQTT** | Lightweight publish/subscribe messaging, common in IoT | Documented only | Very low overhead, good for many small sensors/cameras publishing to a shared broker | Needs a broker (Mosquitto, etc.); this repo's webhook model was simpler for a single-server demo |
 | **ONVIF** | A standard for camera *discovery and control* (not video transport itself — it usually negotiates an RTSP stream underneath) | Documented only | Lets you enumerate and configure cameras from different vendors uniformly | Adds a whole separate protocol/library just for camera setup, overkill for a single demo feed |
 | **GigE Vision** | An industrial machine-vision standard over Ethernet, common for high-speed line-scan/area-scan cameras | Documented only | Very high bandwidth, precise hardware triggering — the standard choice for fast industrial inspection lines | Specialized hardware (frame grabbers), not a general "camera on my network" protocol |
 
-### How this repo actually uses RTSP and WebRTC
+### How this repo actually uses RTSP, WebRTC, and webhooks
 
 - **RTSP** (`scripts/start_rtsp_demo.py`, or the `mediamtx`/`camera-sim-*`
   Docker services): MediaMTX runs as a real RTSP server, and one FFmpeg
@@ -349,6 +349,18 @@ plus a few more worth knowing about.
   server-reflexive path isn't reachable — the Webcam tab shows which ICE
   candidate types (`host` / `srflx` / `relay`) were actually gathered, so
   you can see the TURN relay get used rather than just take it on faith.
+- **Webhooks** (`api/webhooks.py`, `api/webhooks_worker.py`): fired
+  automatically on a significant drift finding, and durable — each
+  delivery is persisted (see [Model registry & governance](#model-registry--governance)
+  for the shared SQLite file), and a failed attempt is retried with
+  exponential backoff (~30s, 60s, 120s, 240s) by a background worker
+  running inside the same process, for up to 5 attempts before it's
+  marked permanently failed. The **Drift Monitor** tab shows the
+  delivery history (status, attempt count, last error, next retry time)
+  and lets you force an immediate retry once you've fixed the receiving
+  endpoint. This is what makes it durable rather than "logged and
+  forgotten" — a webhook endpoint that's down for a few minutes during a
+  deploy doesn't silently lose events.
 
 ---
 
@@ -546,10 +558,11 @@ change.
   or an internal deployment behind your own firewall, but a public-facing
   deployment should switch coturn to time-limited credentials (its
   `use-auth-secret` mode) rather than reuse a fixed shared secret.
-- **Webhooks are best-effort.** A failed delivery is logged and recorded
-  (`GET /api/webhooks/config` shows the last attempt) but not retried. A
-  production deployment integrating with a real alerting/ticketing system
-  would want a durable queue with retries in front of this.
+- **Webhook retries run as an in-process background loop, not a real task
+  queue.** Fine for one server (see [Model registry & governance](#model-registry--governance)
+  for the same single-writer SQLite scoping); a deployment with high
+  delivery volume or multiple API replicas would want a real queue
+  (Celery/RQ + a broker) instead of a 15s poll loop.
 - **The model registry is single-writer (SQLite).** Stated design choice,
   not a bug — see [Model registry & governance](#model-registry--governance).
 - **Drift detection uses simple image statistics, not learned embeddings.**
@@ -578,7 +591,7 @@ change.
 | Docker Compose one-command deployment | Done |
 | Live camera-feed walkthrough for healthcare & video-analytics scenarios | Done |
 | TURN server config for WebRTC across restrictive NATs | Done |
-| Durable webhook delivery with retries | Planned |
+| Durable webhook delivery with retries | Done |
 | A 5th model family entry (e.g. a segmentation model) | Planned |
 | MQTT publish option alongside webhooks | Considering |
 | ONVIF camera discovery | Considering |
@@ -595,7 +608,9 @@ change.
 │   ├── drift/                    # PSI/KS/Cohen's d statistics + routes
 │   ├── registry/                 # SQLModel schema + CRUD/promote/archive routes
 │   ├── ingestion/                # RTSP (OpenCV) and WebRTC (aiortc) video sources
-│   ├── webhooks.py                # outgoing HTTP POST on configurable events
+│   ├── webhooks.py                # outgoing HTTP POST on configurable events, with durable retries
+│   ├── webhooks_models.py         # SQLModel schema for persisted deliveries
+│   ├── webhooks_worker.py         # background retry loop
 │   ├── routes_arena.py            # "run all models on this image"
 │   ├── routes_live.py             # annotated MJPEG stream from a live source
 │   └── Dockerfile
@@ -608,7 +623,7 @@ change.
 │   ├── seed_registry.py           # registers the 4 models with measured metrics
 │   └── fetch_commons_image.py     # how the sample images were sourced
 ├── tests/                          # pytest: drift stats, registry workflow, model smoke tests
-├── docker-compose.yml              # api + frontend + mediamtx + camera-sim
+├── docker-compose.yml              # api + frontend + mediamtx + camera-sim + coturn
 └── .github/workflows/ci.yml        # api tests + frontend build + full-stack Docker smoke test
 ```
 
