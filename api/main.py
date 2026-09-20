@@ -16,6 +16,9 @@ from api.models.loader import loader
 from api.registry.db import init_db
 from api.registry.routes import router as registry_router
 from api.routes_arena import router as arena_router
+from api.routes_live import router as live_router
+from api.routes_webhooks import router as webhooks_router
+from api.routes_webrtc import router as webrtc_router
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SAMPLES_DIR = REPO_ROOT / "data" / "samples"
@@ -37,6 +40,9 @@ if SAMPLES_DIR.exists():
 app.include_router(arena_router)
 app.include_router(registry_router)
 app.include_router(drift_router)
+app.include_router(live_router)
+app.include_router(webhooks_router)
+app.include_router(webrtc_router)
 
 
 @app.on_event("startup")

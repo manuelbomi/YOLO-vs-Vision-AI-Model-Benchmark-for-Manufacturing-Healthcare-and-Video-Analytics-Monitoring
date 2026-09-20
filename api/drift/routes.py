@@ -1,7 +1,10 @@
+import io
+
 import numpy as np
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from PIL import Image
-import io
+
+from api import webhooks
 
 from .features import extract_features
 from .stats import FeatureDriftResult, analyze_feature
@@ -43,5 +46,12 @@ def check_drift(
         ref_values = np.array([f[name] for f in reference_features])
         cur_values = np.array([f[name] for f in current_features])
         results.append(analyze_feature(name, ref_values, cur_values))
+
+    significant = [r for r in results if r.verdict == "significant"]
+    if significant:
+        webhooks.send_event(
+            "drift.significant",
+            {"features": [r.model_dump() for r in significant]},
+        )
 
     return results
