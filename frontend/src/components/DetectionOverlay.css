@@ -1,0 +1,39 @@
+.detection-overlay-frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--grid);
+}
+
+.detection-overlay-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.detection-box {
+  position: absolute;
+  border: 2px solid;
+  border-radius: 2px;
+}
+
+.detection-label {
+  position: absolute;
+  top: -18px;
+  left: -2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.detection-caption {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+}

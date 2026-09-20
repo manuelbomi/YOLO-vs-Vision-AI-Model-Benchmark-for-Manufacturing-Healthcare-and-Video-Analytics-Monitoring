@@ -31,6 +31,7 @@ class FeatureDriftResult(BaseModel):
     ks_pvalue: float
     cohens_d: float
     verdict: str  # "none" | "moderate" | "significant"
+    low_variance_warning: bool = False
 
 
 def population_stability_index(reference: np.ndarray, current: np.ndarray, bins: int = 10) -> float:
@@ -92,17 +93,43 @@ def _verdict(psi: float, ks_pvalue: float, d: float) -> str:
     return "none"
 
 
+# Relative mean shift that triggers the low-variance fallback verdict below.
+# Deliberately coarser than Cohen's d's thresholds -- it's a blunt backstop,
+# not a replacement for the standardized statistics.
+_LOW_VARIANCE_RELATIVE_SHIFT_THRESHOLD = 0.15
+
+
 def analyze_feature(name: str, reference: np.ndarray, current: np.ndarray) -> FeatureDriftResult:
     psi = population_stability_index(reference, current)
     ks_stat, ks_p = ks_test_drift(reference, current)
     d = cohens_d(reference, current)
+    reference_mean = float(np.mean(reference))
+    current_mean = float(np.mean(current))
+    verdict = _verdict(psi, ks_p, d)
+
+    # A batch of near-identical images (zero within-batch variance) silently
+    # zeroes out Cohen's d (divide-by-zero guard) and starves PSI/KS of the
+    # spread they need -- an obviously shifted batch can otherwise come back
+    # "none". Found this by hand while building the demo (see README > Data
+    # drift). Rather than let that misreport silently, fall back to a plain
+    # relative-mean-shift check whenever both batches individually have
+    # near-zero variance, and say so explicitly rather than presenting it
+    # with the same confidence as the standardized statistics.
+    low_variance_warning = False
+    if np.std(reference) < 1e-6 and np.std(current) < 1e-6:
+        relative_shift = abs(current_mean - reference_mean) / (abs(reference_mean) + 1e-6)
+        if relative_shift > _LOW_VARIANCE_RELATIVE_SHIFT_THRESHOLD:
+            low_variance_warning = True
+            verdict = "significant"
+
     return FeatureDriftResult(
         feature=name,
-        reference_mean=float(np.mean(reference)),
-        current_mean=float(np.mean(current)),
+        reference_mean=reference_mean,
+        current_mean=current_mean,
         psi=psi,
         ks_statistic=ks_stat,
         ks_pvalue=ks_p,
         cohens_d=d,
-        verdict=_verdict(psi, ks_p, d),
+        verdict=verdict,
+        low_variance_warning=low_variance_warning,
     )

@@ -1,0 +1,118 @@
+.arena-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sample-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sample-chip {
+  border: 1px solid var(--grid);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.sample-chip:hover {
+  border-color: var(--accent);
+}
+
+.sample-chip img {
+  width: 100%;
+  height: 70px;
+  object-fit: cover;
+}
+
+.sample-chip span {
+  font-size: 11px;
+  padding: 4px 6px;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.or-divider {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 12px 0;
+}
+
+.run-button {
+  margin-top: 14px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.run-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  color: var(--status-critical);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.result-card {
+  border: 1px solid var(--grid);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--surface);
+}
+
+.result-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.result-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.latency-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.latency-table th,
+.latency-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--grid);
+}
+
+.latency-table td.numeric {
+  font-variant-numeric: tabular-nums;
+}

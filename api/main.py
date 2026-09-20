@@ -5,13 +5,13 @@ resolve):
     uvicorn api.main:app --reload --port 8000
 """
 import os
-from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from api.drift.routes import router as drift_router
+from api.main_paths import SAMPLES_DIR
 from api.models.loader import loader
 from api.registry.db import init_db
 from api.registry.routes import router as registry_router
@@ -19,9 +19,6 @@ from api.routes_arena import router as arena_router
 from api.routes_live import router as live_router
 from api.routes_webhooks import router as webhooks_router
 from api.routes_webrtc import router as webrtc_router
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SAMPLES_DIR = REPO_ROOT / "data" / "samples"
 
 app = FastAPI(title="Vision Model Benchmark API")
 

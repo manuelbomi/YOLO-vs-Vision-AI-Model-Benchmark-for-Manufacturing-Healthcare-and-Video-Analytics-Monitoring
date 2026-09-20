@@ -55,3 +55,22 @@ def test_analyze_feature_verdict_significant_for_large_shift():
     current = rng.normal(160, 5, size=500)
     result = analyze_feature("brightness", reference, current)
     assert result.verdict == "significant"
+
+
+def test_analyze_feature_low_variance_fallback_catches_identical_batch_shift():
+    # Regression test: 3 identical reference images + 3 identical (but
+    # shifted) current images used to report "none" because zero
+    # within-batch variance zeroed out Cohen's d and starved PSI/KS.
+    reference = np.array([100.0, 100.0, 100.0])
+    current = np.array([40.0, 40.0, 40.0])
+    result = analyze_feature("brightness", reference, current)
+    assert result.low_variance_warning is True
+    assert result.verdict == "significant"
+
+
+def test_analyze_feature_low_variance_no_warning_when_batches_actually_match():
+    reference = np.array([100.0, 100.0, 100.0])
+    current = np.array([101.0, 101.0, 101.0])  # negligible relative shift
+    result = analyze_feature("brightness", reference, current)
+    assert result.low_variance_warning is False
+    assert result.verdict == "none"

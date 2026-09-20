@@ -1,0 +1,31 @@
+.family-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.family-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.family-yolo .family-dot {
+  background: var(--family-yolo);
+}
+
+.family-cnn .family-dot {
+  background: var(--family-cnn);
+}
+
+.family-transformer .family-dot {
+  background: var(--family-transformer);
+}
+
+.family-vlm .family-dot {
+  background: var(--family-vlm);
+}

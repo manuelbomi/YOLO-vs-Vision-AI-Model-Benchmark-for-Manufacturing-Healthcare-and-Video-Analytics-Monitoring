@@ -1,0 +1,57 @@
+.muted {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.error {
+  color: var(--status-critical);
+  font-size: 13px;
+}
+
+.registry-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+.registry-table th,
+.registry-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--grid);
+  vertical-align: top;
+}
+
+.metrics-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.status-badge {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 6px;
+}
+
+.actions-cell button {
+  border: 1px solid var(--grid);
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.actions-cell button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

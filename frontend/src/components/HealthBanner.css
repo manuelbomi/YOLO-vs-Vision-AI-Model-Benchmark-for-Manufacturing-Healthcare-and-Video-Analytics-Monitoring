@@ -1,0 +1,18 @@
+.health-banner {
+  border: 1px solid var(--grid);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--surface);
+}
+
+.health-banner.warning {
+  border-color: var(--status-warning);
+  background: color-mix(in srgb, var(--status-warning) 10%, var(--surface));
+}
+
+.health-banner.critical {
+  border-color: var(--status-critical);
+  background: color-mix(in srgb, var(--status-critical) 10%, var(--surface));
+}

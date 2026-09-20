@@ -1,0 +1,73 @@
+.drift-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.upload-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+@media (max-width: 600px) {
+  .upload-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.run-button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.run-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  color: var(--status-critical);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.drift-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+.drift-table th,
+.drift-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--grid);
+}
+
+.drift-table td.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.verdict-badge {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.low-variance-note {
+  color: var(--status-warning);
+  font-size: 11px;
+}

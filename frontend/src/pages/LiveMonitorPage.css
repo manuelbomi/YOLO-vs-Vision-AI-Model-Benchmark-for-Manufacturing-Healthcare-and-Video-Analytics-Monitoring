@@ -1,0 +1,49 @@
+.model-select-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.model-select-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.model-select-row select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--grid);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.restart-button {
+  border: 1px solid var(--grid);
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.stream-frame {
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  max-width: 720px;
+}
+
+.stream-frame img {
+  width: 100%;
+  display: block;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 13px;
+}

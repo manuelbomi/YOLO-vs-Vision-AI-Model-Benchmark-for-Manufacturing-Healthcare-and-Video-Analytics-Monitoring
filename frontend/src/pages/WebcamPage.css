@@ -1,0 +1,81 @@
+.model-select-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.model-select-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.model-select-row select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--grid);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.run-button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stop-button {
+  background: var(--status-critical);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.error {
+  color: var(--status-critical);
+  font-size: 13px;
+}
+
+.video-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+@media (max-width: 600px) {
+  .video-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+.video-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 0 4px;
+}
+
+.video-pair video {
+  width: 100%;
+  border-radius: 8px;
+  background: #000;
+  aspect-ratio: 4 / 3;
+}
