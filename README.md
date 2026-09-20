@@ -343,9 +343,12 @@ plus a few more worth knowing about.
   pattern): the **Webcam** dashboard tab sends your browser's camera to the
   backend over a real `RTCPeerConnection`, the backend runs each frame
   through the chosen model, and sends the annotated video back on a new
-  outgoing track. No TURN server is configured — fine for same-machine/LAN
-  use with a public STUN server, not for browsers on restrictive
-  corporate/mobile networks (see [Known limitations](#known-limitations--honest-scoping)).
+  outgoing track. A TURN server (`coturn`, bundled in `docker-compose.yml`)
+  is configured alongside the public STUN server, so it also works for
+  browsers behind restrictive corporate/mobile NATs where a direct or
+  server-reflexive path isn't reachable — the Webcam tab shows which ICE
+  candidate types (`host` / `srflx` / `relay`) were actually gathered, so
+  you can see the TURN relay get used rather than just take it on faith.
 
 ---
 
@@ -538,11 +541,11 @@ change.
 
 ## Known limitations & honest scoping
 
-- **WebRTC has no TURN server configured** — fine for same-machine/LAN
-  demo use; a browser behind a restrictive NAT on a different network may
-  fail to connect. Adding TURN is a config change (see
-  [aiortc's documentation](https://github.com/aiortc/aiortc)), not an
-  architecture change.
+- **The bundled TURN server uses static demo credentials** (`coturn` in
+  `docker-compose.yml`, username/password both `vbdemo`) — fine for a demo
+  or an internal deployment behind your own firewall, but a public-facing
+  deployment should switch coturn to time-limited credentials (its
+  `use-auth-secret` mode) rather than reuse a fixed shared secret.
 - **Webhooks are best-effort.** A failed delivery is logged and recorded
   (`GET /api/webhooks/config` shows the last attempt) but not retried. A
   production deployment integrating with a real alerting/ticketing system
@@ -574,7 +577,7 @@ change.
 | Webhooks on significant drift | Done |
 | Docker Compose one-command deployment | Done |
 | Live camera-feed walkthrough for healthcare & video-analytics scenarios | Done |
-| TURN server config for WebRTC across restrictive NATs | Planned |
+| TURN server config for WebRTC across restrictive NATs | Done |
 | Durable webhook delivery with retries | Planned |
 | A 5th model family entry (e.g. a segmentation model) | Planned |
 | MQTT publish option alongside webhooks | Considering |

@@ -57,6 +57,30 @@ services:
       ]
     restart: unless-stopped
 
+  # TURN server for WebRTC across restrictive NATs (see README > Known
+  # limitations). Static demo credentials below are fine for local/LAN
+  # use only -- rotate them (and set a real --external-ip) before exposing
+  # this to the internet. Without this service, WebRTC still works for
+  # same-machine/LAN use via the public STUN server the frontend also
+  # configures; TURN is only needed when a peer is behind a NAT that STUN
+  # alone can't traverse.
+  coturn:
+    image: coturn/coturn:latest
+    command:
+      - -n
+      - --log-file=stdout
+      - --lt-cred-mech
+      - --realm=vision-benchmark.local
+      - --user=vbdemo:vbdemo
+      - --no-cli
+      - --min-port=49160
+      - --max-port=49200
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "49160-49200:49160-49200/udp"
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -80,7 +104,11 @@ services:
       context: ./frontend
       args:
         VITE_API_BASE_URL: http://localhost:8010
+        VITE_TURN_URL: turn:localhost:3478
+        VITE_TURN_USERNAME: vbdemo
+        VITE_TURN_CREDENTIAL: vbdemo
     ports:
       - "3001:80"
     depends_on:
       - api
+      - coturn
