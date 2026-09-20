@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Model weight caches (re-downloaded on first run -- see README)
+*.pt
+yolo11n.pt
+
+# Registry database (created at runtime)
+registry.db
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# OS
+.DS_Store

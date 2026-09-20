@@ -1,0 +1,26 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+
+# Object detectors
+ultralytics
+# Pinned below v5: v5.x's stricter config validation rejects DETR's
+# published config.json (dilation: null instead of false) -- see
+# api/models/detr_model.py for details.
+transformers<5
+
+# Vector/backend
+fastapi
+uvicorn[standard]
+python-multipart
+sqlmodel
+scipy
+numpy
+pillow
+opencv-python
+
+# Video ingestion (WebRTC) -- see docs/protocols.md for the Windows/Docker note
+aiortc
+
+pytest
+httpx
